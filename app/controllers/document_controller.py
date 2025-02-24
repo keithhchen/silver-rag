@@ -5,7 +5,7 @@ from app.exceptions import ServiceError
 from app.services.storage_service import StorageService
 from app.services.upstage_service import UpstageService
 from app.services.dify_service import DifyService
-from app.services.database_service import DatabaseService
+from app.services.database import DatabaseService
 from app.config import Settings
 
 router = APIRouter()

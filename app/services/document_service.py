@@ -1,27 +1,12 @@
 from datetime import datetime
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from app.config import Settings
-from app.models.document import Base, DocumentDB, DocumentCreate, Document
+from app.models.document import DocumentDB, DocumentCreate, Document
 from app.exceptions import DatabaseError
 from loguru import logger
 
-class DatabaseService:
-    def __init__(self, settings: Settings):
-        self.engine = create_async_engine(settings.database_url)
-        self.async_session = sessionmaker(
-            self.engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
-
-    async def init_db(self):
-        try:
-            async with self.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database initialized successfully")
-        except Exception as e:
-            raise DatabaseError(f"Failed to initialize database: {str(e)}")
+class DocumentService:
+    def __init__(self, async_session: sessionmaker):
+        self.async_session = async_session
 
     async def create_document(self, document_data: DocumentCreate) -> Document:
         try:

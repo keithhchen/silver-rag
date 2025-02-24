@@ -11,3 +11,5 @@ pydantic-settings==2.1.0
 loguru==0.7.2
 aiohttp
 aiomysql==0.2.0
+passlib==1.7.4
+python-jose==3.3.0

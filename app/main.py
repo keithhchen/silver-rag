@@ -1,15 +1,21 @@
 from fastapi import FastAPI
 from loguru import logger
 from app.config import Settings
-from app.services.database_service import DatabaseService
+from app.services.database import DatabaseService
 from app.controllers.document_controller import router as document_router
+from app.controllers.user_controller import router as user_router
+from app.middleware.auth_middleware import AuthMiddleware
 
 app = FastAPI()
 settings = Settings()
 db_service = DatabaseService(settings)
 
+# Add authentication middleware
+app.middleware("http")(AuthMiddleware())
+
 # Register routers
 app.include_router(document_router, prefix="/documents")
+app.include_router(user_router, prefix="/users")
 
 @app.on_event("startup")
 async def startup_event():
