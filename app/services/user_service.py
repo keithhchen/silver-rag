@@ -129,3 +129,18 @@ class UserService:
                 return len(users)
         except Exception as e:
             raise DatabaseError(f"Failed to get user count: {str(e)}")
+
+    async def log_activity(self, user_id: int, action: str, details: str) -> None:
+        """Unified method for logging user activities."""
+        try:
+            async with self.async_session() as session:
+                log = UserLog(
+                    user_id=user_id,
+                    action=action,
+                    details=details
+                )
+                session.add(log)
+                await session.commit()
+        except Exception as e:
+            logger.error(f"Failed to log user activity: {str(e)}")
+            raise DatabaseError(f"Failed to log user activity: {str(e)}")

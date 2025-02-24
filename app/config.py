@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     dify_dataset_api_key: str = Field(..., env='DIFY_DATASET_API_KEY')
     dify_dataset_id: str = Field(..., env='DIFY_DATASET_ID')
     dify_dataset_api_url: str = Field('https://api.dify.ai/v1/datasets/{dataset_id}')
-    dify_api_url: str = Field('https://api.dify.ai/v1}')
+    dify_api_url: str = Field('https://api.dify.ai/v1')
     dify_api_key: str = Field(..., env='DIFY_API_KEY')
     
     class Config:

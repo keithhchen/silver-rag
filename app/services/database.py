@@ -8,6 +8,9 @@ from app.services.document_service import DocumentService
 from app.services.user_service import UserService
 from loguru import logger
 
+# Export Session for use in other services
+Session = None
+
 class DatabaseService:
     def __init__(self, settings: Settings):
         self.engine = create_async_engine(settings.database_url)
@@ -16,6 +19,10 @@ class DatabaseService:
             class_=AsyncSession,
             expire_on_commit=False
         )
+        # Set the global Session
+        global Session
+        Session = self.async_session
+        
         self.document_service = DocumentService(self.async_session)
         self.user_service = UserService(self.async_session)
 

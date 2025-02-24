@@ -91,11 +91,18 @@ async def get_authenticated_user(request: Request) -> Optional[User]:
     if not username:
         return None
         
-    user = await user_service.get_user_by_username(username)
-    if not user:
+    user_db = await user_service.get_user_by_username(username)
+    if not user_db:
         return None
         
-    return User.model_validate(user)
+    return User(
+        id=user_db.id,
+        uuid=user_db.uuid,
+        username=user_db.username,
+        role=user_db.role,
+        created_at=user_db.created_at,
+        updated_at=user_db.updated_at
+    )
 
 class AuthMiddleware:
     async def __call__(self, request: Request, call_next):
