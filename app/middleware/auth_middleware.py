@@ -111,11 +111,12 @@ class AuthMiddleware:
         user = None
 
         # Return 400 if no token is provided
-        if not token:
-            return JSONResponse(
-                status_code=400,
-                content={"detail": "No authentication token provided"}
-            )
+        if request.url.path != "/users/login":
+            if not token:
+                return JSONResponse(
+                    status_code=400,
+                    content={"detail": "No authentication token provided"}
+                )
 
         # Verify token and get user
         payload = await verify_token(token)
