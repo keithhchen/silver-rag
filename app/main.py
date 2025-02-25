@@ -15,12 +15,12 @@ db_service = DatabaseService(settings)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://silver-rag-fe.vercel.app"],  # Common development origins
+    allow_origins=["http://localhost:3000", "https://silver-rag-fe.vercel.app"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Accept"],
     expose_headers=["Content-Type", "Authorization"],
-    max_age=600,  # Cache preflight requests for 10 minutes
+    max_age=600
 )
 
 # Add authentication middleware
