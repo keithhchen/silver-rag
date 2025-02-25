@@ -106,17 +106,20 @@ async def get_authenticated_user(request: Request) -> Optional[User]:
 
 class AuthMiddleware:
     async def __call__(self, request: Request, call_next):
+        # Skip authentication for login endpoint
+        if request.url.path == "/users/login":
+            return await call_next(request)
+
         # Get token if provided
         token = await get_token_from_header(request)
         user = None
 
         # Return 400 if no token is provided
-        if request.url.path != "/users/login":
-            if not token:
-                return JSONResponse(
-                    status_code=400,
-                    content={"detail": "No authentication token provided"}
-                )
+        if not token:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "No authentication token provided"}
+            )
 
         # Verify token and get user
         payload = await verify_token(token)
