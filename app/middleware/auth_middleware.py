@@ -110,29 +110,39 @@ class AuthMiddleware:
         token = await get_token_from_header(request)
         user = None
 
-        if token:
-            # Verify token and get user
-            payload = await verify_token(token)
-            if payload:
-                username = payload.get("sub")
-                user = await user_service.get_user_by_username(username)
+        # Return 400 if no token is provided
+        if not token:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "No authentication token provided"}
+            )
 
-                # Check endpoint permissions only if endpoint is explicitly restricted
-                for endpoint, allowed_roles in ENDPOINT_PERMISSIONS.items():
-                    if request.url.path.startswith(endpoint):
-                        if not user:
-                            return JSONResponse(
-                                status_code=401,
-                                content={"detail": "Authentication required for this endpoint"}
-                            )
-                        if user.role not in allowed_roles:
-                            return JSONResponse(
-                                status_code=403,
-                                content={"detail": "Not enough permissions"}
-                            )
+        # Verify token and get user
+        payload = await verify_token(token)
+        if not payload:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid authentication token"}
+            )
+
+        username = payload.get("sub")
+        user = await user_service.get_user_by_username(username)
+
+        # Check endpoint permissions only if endpoint is explicitly restricted
+        for endpoint, allowed_roles in ENDPOINT_PERMISSIONS.items():
+            if request.url.path.startswith(endpoint):
+                if not user:
+                    return JSONResponse(
+                        status_code=401,
+                        content={"detail": "Authentication required for this endpoint"}
+                    )
+                if user.role not in allowed_roles:
+                    return JSONResponse(
+                        status_code=403,
+                        content={"detail": "Not enough permissions"}
+                    )
 
         try:
-
             # Proceed with the request
             response = await call_next(request)
 

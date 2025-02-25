@@ -46,6 +46,27 @@ class StorageService:
             # Reset file pointer for other services to use
             await file.seek(0)
 
+    async def get_file(self, document_id: str):
+        try:
+            bucket = self.client.bucket(self.bucket_name)
+            blobs = list(bucket.list_blobs(prefix=f"{document_id}/"))
+            
+            if not blobs:
+                return None
+                
+            # Get the first file in the document folder
+            blob = blobs[0]
+            content = blob.download_as_bytes()
+            
+            return {
+                'content': content,
+                'content_type': blob.content_type,
+                'filename': blob.name.split('/')[-1]
+            }
+            
+        except Exception as e:
+            raise StorageError(f"Failed to retrieve file from Google Cloud Storage: {str(e)}")
+
     async def delete_file(self, document_id: str) -> bool:
         try:
             bucket = self.client.bucket(self.bucket_name)

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from app.config import Settings
 from app.services.database import DatabaseService
@@ -10,6 +11,15 @@ from app.middleware.auth_middleware import AuthMiddleware
 app = FastAPI()
 settings = Settings()
 db_service = DatabaseService(settings)
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 # Add authentication middleware
 app.middleware("http")(AuthMiddleware())

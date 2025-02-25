@@ -31,7 +31,8 @@ class ChatService:
                 'query': query,
                 'response_mode': 'streaming',
                 'conversation_id': conversation_id or '',
-                'user': str(user_id)
+                'user': str(user_id),
+                'auto_generate_name': 'true'
             }
 
             # Log user chat activity asynchronously in the background
@@ -52,7 +53,7 @@ class ChatService:
                     if response.status != 200:
                         error_text = await response.text()
                         raise DifyAPIError(
-                            f'Dify Chat API request failed with status {response.status}: {error_text}',
+                            f'Chat API request failed with status {response.status}: {error_text}',
                             status_code=response.status
                         )
 

@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import select, func
 from app.models.document import DocumentDB, DocumentCreate, Document
 from app.exceptions import DatabaseError
 from loguru import logger
@@ -48,3 +49,38 @@ class DocumentService:
                 return True
         except Exception as e:
             raise DatabaseError(f"Failed to delete document: {str(e)}")
+
+    async def list_documents(self, page: int = 1, page_size: int = 10):
+        try:
+            async with self.async_session() as session:
+                # Calculate offset
+                offset = (page - 1) * page_size
+
+                # Get total count
+                total_count = await session.scalar(
+                    select(func.count()).select_from(DocumentDB).where(DocumentDB.deleted_at.is_(None))
+                )
+
+                # Get paginated documents
+                query = select(DocumentDB)\
+                    .where(DocumentDB.deleted_at.is_(None))\
+                    .order_by(DocumentDB.created_at.desc())\
+                    .offset(offset)\
+                    .limit(page_size)
+
+                result = await session.execute(query)
+                documents = result.scalars().all()
+
+                # Convert to Pydantic models
+                document_list = [Document.model_validate(doc) for doc in documents]
+
+                return {
+                    "items": document_list,
+                    "total": total_count,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_pages": (total_count + page_size - 1) // page_size
+                }
+
+        except Exception as e:
+            raise DatabaseError(f"Failed to list documents: {str(e)}")
