@@ -6,7 +6,6 @@ from app.services.database import DatabaseService
 from app.controllers.document_controller import router as document_router
 from app.controllers.user_controller import router as user_router
 from app.controllers.chat_controller import router as chat_router
-from app.middleware.auth_middleware import AuthMiddleware
 
 app = FastAPI()
 settings = Settings()
@@ -15,16 +14,11 @@ db_service = DatabaseService(settings)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://silver-rag-fe.vercel.app"],
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept"],
-    expose_headers=["Content-Type", "Authorization"],
-    max_age=600
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-# Add authentication middleware
-app.middleware("http")(AuthMiddleware())
 
 # Register routers
 app.include_router(document_router, prefix="/documents")

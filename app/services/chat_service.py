@@ -31,18 +31,19 @@ class ChatService:
                 'query': query,
                 'response_mode': 'streaming',
                 'conversation_id': conversation_id or '',
-                'user': str(user_id),
+                'user': str(user_id) if user_id is not None else '',
                 'auto_generate_name': 'true'
             }
 
-            # Log user chat activity asynchronously in the background
-            asyncio.create_task(
-                self.user_service.log_activity(
-                    user_id=int(user_id),
-                    action='chat_message',
-                    details=query
+            # Log user chat activity asynchronously in the background only if user_id is provided
+            if user_id is not None:
+                asyncio.create_task(
+                    self.user_service.log_activity(
+                        user_id=str(user_id),
+                        action='chat_message',
+                        details=query
+                    )
                 )
-            )
 
             async with aiohttp.ClientSession() as session:
                 async with session.post(
