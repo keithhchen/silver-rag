@@ -33,7 +33,7 @@ class DocumentService:
 
             # Process with Dify API
             logger.info("Processing document with Dify API")
-            dify_response = await self.dify_service.create_document(upstage_response.markdown, file.filename)
+            dify_response = await self.dify_service.create_document(upstage_response.markdown, file.filename.rsplit('.', 1)[0] + '.md')
 
             # Create document record
             document_data = DocumentCreate(
