@@ -43,7 +43,7 @@ async def delete_document(document_id: int):
             )
 
         # Delete from external services first
-        await document_service.delete_document(document_id)
+        await document_service.soft_delete_document(document_id)
         return True
 
     except DatabaseError as e:
@@ -67,7 +67,7 @@ async def list_documents(page: int = 1, page_size: int = 10):
         logger.error(f"Unexpected error during document listing: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{document_id}", response_model=Document)
+@router.get("/id/{document_id}", response_model=Document)
 async def get_document(document_id: int):
     try:
         document = await document_service.get_document(document_id)
