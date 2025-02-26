@@ -5,7 +5,7 @@ from app.services.chat_service import ChatService
 from app.middleware.auth import JWTBearer
 from pydantic import BaseModel
 from loguru import logger
-from exceptions import ServiceError, DifyAPIError
+from app.exceptions import ServiceError, DifyAPIError
 import traceback
 
 router = APIRouter()
