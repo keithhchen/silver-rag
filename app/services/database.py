@@ -23,7 +23,7 @@ class DatabaseService:
         global Session
         Session = self.async_session
         
-        self.document_service = DocumentService(self.async_session)
+        self.document_service = DocumentService(self.async_session, settings)
         self.user_service = UserService(self.async_session)
 
     async def init_db(self):

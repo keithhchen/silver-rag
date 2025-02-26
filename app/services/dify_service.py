@@ -35,7 +35,7 @@ class DifyService:
                     if response.status != 200:
                         error_text = await response.text()
                         raise DifyAPIError(
-                            f"Dify API request failed with status {response.status}: {error_text}",
+                            f"Embedding API request failed with status {response.status}: {error_text}",
                             status_code=response.status
                         )
 
@@ -65,14 +65,14 @@ class DifyService:
                     if response.status != 200:
                         error_text = await response.text()
                         raise DifyAPIError(
-                            f"Dify API delete request failed with status {response.status}: {error_text}",
+                            f"Embedding API delete request failed with status {response.status}: {error_text}",
                             status_code=response.status
                         )
                     
-                    logger.info(f"Deleted document from Dify with ID: {document_id}")
+                    logger.info(f"Deleted document from vector database with ID: {document_id}")
                     return True
 
         except DifyAPIError:
             raise
         except Exception as e:
-            raise DifyAPIError(f"Failed to delete document from Dify: {str(e)}")
+            raise DifyAPIError(f"Failed to delete document from vector database: {str(e)}")
