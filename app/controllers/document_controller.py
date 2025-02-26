@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Response, Request
 from loguru import logger
+import traceback
 from app.models.document import Document
 from app.exceptions import ServiceError, DatabaseError, DifyAPIError
 from app.services.database import DatabaseService
@@ -15,22 +16,21 @@ async def upload_document(file: UploadFile = File(...)):
     try:
         return await document_service.process_and_store_document(file)
     except DifyAPIError as e:
-        logger.error(f"Embedding service error during document lookup: {str(e)}")
+        logger.error(f"Embedding service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
     except DatabaseError as e:
-        logger.error(f"Database service error during document lookup: {str(e)}")
+        logger.error(f"Database service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error: {str(e)}")
+        logger.error(f"Service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
+        logger.error(f"Unexpected error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @router.delete("/{document_id}", response_model=bool)
 async def delete_document(document_id: int):
     try:
-        # Get document details before deletion
         document = await document_service.get_document(document_id)
         if not document:
             raise HTTPException(
@@ -42,18 +42,19 @@ async def delete_document(document_id: int):
                 }
             )
 
-        # Delete from external services first
         await document_service.soft_delete_document(document_id)
         return True
 
+    except HTTPException:
+        raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}")
+        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error during document deletion: {str(e)}")
+        logger.error(f"Service error during document deletion: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during document deletion: {str(e)}")
+        logger.error(f"Unexpected error during document deletion: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/", response_model=dict)
@@ -61,10 +62,10 @@ async def list_documents(page: int = 1, page_size: int = 10):
     try:
         return await document_service.list_documents(page=page, page_size=page_size)
     except ServiceError as e:
-        logger.error(f"Service error during document listing: {str(e)}")
+        logger.error(f"Service error during document listing: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during document listing: {str(e)}")
+        logger.error(f"Unexpected error during document listing: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/id/{document_id}", response_model=Document)
@@ -82,14 +83,16 @@ async def get_document(document_id: int):
             )
         return document
 
+    except HTTPException:
+        raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}")
+        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error during document retrieval: {str(e)}")
+        logger.error(f"Service error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during document retrieval: {str(e)}")
+        logger.error(f"Unexpected error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/embedding/{dify_document_id}", response_model=Document)
@@ -107,14 +110,16 @@ async def get_document_by_dify_id(dify_document_id: str):
             )
         return document
 
+    except HTTPException:
+        raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}")
+        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error during document retrieval: {str(e)}")
+        logger.error(f"Service error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during document retrieval: {str(e)}")
+        logger.error(f"Unexpected error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/single", response_model=Document)
@@ -124,10 +129,6 @@ async def lookup_single_document(
     gcs_document_id: str = None,
     dify_document_id: str = None,
 ):
-    # Log request information
-    logger.info(f"Request headers: {dict(request.headers)}")
-    logger.info(f"Query parameters: {request.query_params}")
-    logger.info(f"Path parameters: {request.path_params}")
 
     try:
         # Validate that at least one parameter is provided
@@ -160,14 +161,16 @@ async def lookup_single_document(
 
         return document
 
+    except HTTPException:
+        raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}")
+        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error during document lookup: {str(e)}")
+        logger.error(f"Service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during document lookup: {str(e)}")
+        logger.error(f"Unexpected error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{document_id}/file")
@@ -191,12 +194,14 @@ async def get_document_file(document_id: int):
                 'Content-Disposition': f'inline; filename="{file_data["filename"]}"'
             }
         )
+    except HTTPException:
+        raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}")
+        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error during file retrieval: {str(e)}")
+        logger.error(f"Service error during file retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during file retrieval: {str(e)}")
+        logger.error(f"Unexpected error during file retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))

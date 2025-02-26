@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from app.config import Settings
 from app.services.chat_service import ChatService
 from app.middleware.auth import JWTBearer
 from pydantic import BaseModel
 from loguru import logger
+from exceptions import ServiceError, DifyAPIError
+import traceback
 
 router = APIRouter()
 settings = Settings()
@@ -30,7 +32,13 @@ async def send_chat_message(request: Request, chat_request: ChatMessageRequest):
             generate_response(),
             media_type="text/event-stream"
         )
-
+    
+    except DifyAPIError as e:
+        logger.error(f"Chat service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except ServiceError as e:
+        logger.error(f"Service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error in chat message endpoint: {str(e)}")
-        return {"detail": "Internal server error"}, 500
+        logger.error(f"Unexpected error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        raise HTTPException(status_code=500, detail=str(e))

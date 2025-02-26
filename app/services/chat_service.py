@@ -54,7 +54,7 @@ class ChatService:
                     if response.status != 200:
                         error_text = await response.text()
                         raise DifyAPIError(
-                            f'Chat API request failed with status {response.status}: {error_text}',
+                            f'Chat service request failed with status {response.status}: {error_text}',
                             status_code=response.status
                         )
 
@@ -66,4 +66,4 @@ class ChatService:
         except DifyAPIError:
             raise
         except Exception as e:
-            raise DifyAPIError(f'Failed to send chat message to Dify: {str(e)}')
+            raise DifyAPIError(f'Failed to send chat message: {str(e)}')
