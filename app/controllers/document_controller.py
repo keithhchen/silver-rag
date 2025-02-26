@@ -14,7 +14,8 @@ document_service = db_service.document_service
 @router.post("/upload", response_model=Document)
 async def upload_document(file: UploadFile = File(...)):
     try:
-        return await document_service.process_and_store_document(file)
+        result = await document_service.process_and_store_document(file)
+        return result
     except DifyAPIError as e:
         logger.error(f"Embedding service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -57,7 +58,7 @@ async def delete_document(document_id: int):
         logger.error(f"Unexpected error during document deletion: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/", response_model=dict)
+@router.get("/list", response_model=dict)
 async def list_documents(page: int = 1, page_size: int = 10):
     try:
         return await document_service.list_documents(page=page, page_size=page_size)

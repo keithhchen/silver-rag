@@ -13,10 +13,11 @@ settings = Settings()
 db_service = DatabaseService(settings)
 user_service = UserService(db_service.async_session)
 
-@router.post("/", response_model=User)
+@router.post("/create", response_model=User)
 async def create_user(user_data: UserCreate):
     try:
-        return await user_service.create_user(user_data)
+        result = await user_service.create_user(user_data)
+        return result
     except DatabaseError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -30,7 +31,8 @@ class LoginRequest(BaseModel):
 @router.post("/login")
 async def login(login_data: LoginRequest):
     try:
-        return await user_service.login_user(login_data.username, login_data.password)
+        result = await user_service.login_user(login_data.username, login_data.password)
+        return result
     except DatabaseError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -40,7 +42,8 @@ async def login(login_data: LoginRequest):
 @router.put("/change-password")
 async def change_password(username: str, password_update: UserUpdate):
     try:
-        return await user_service.change_user_password(username, password_update)
+        result = await user_service.change_user_password(username, password_update)
+        return result
     except DatabaseError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
