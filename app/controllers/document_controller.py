@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Response
+from fastapi import APIRouter, UploadFile, File, HTTPException, Response, Request
 from loguru import logger
 from app.models.document import Document
 from app.exceptions import ServiceError, DatabaseError, DifyAPIError
@@ -82,7 +82,7 @@ async def get_document(document_id: int):
             )
         return document
 
-    except DatabaseService as e:
+    except DatabaseError as e:
         logger.error(f"DatabaseService error during document lookup: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
@@ -107,7 +107,7 @@ async def get_document_by_dify_id(dify_document_id: str):
             )
         return document
 
-    except DatabaseService as e:
+    except DatabaseError as e:
         logger.error(f"DatabaseService error during document lookup: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
@@ -119,10 +119,16 @@ async def get_document_by_dify_id(dify_document_id: str):
 
 @router.get("/single", response_model=Document)
 async def lookup_single_document(
+    request: Request,
     id: int = None,
     gcs_document_id: str = None,
-    dify_document_id: str = None
+    dify_document_id: str = None,
 ):
+    # Log request information
+    logger.info(f"Request headers: {dict(request.headers)}")
+    logger.info(f"Query parameters: {request.query_params}")
+    logger.info(f"Path parameters: {request.path_params}")
+
     try:
         # Validate that at least one parameter is provided
         if not any([id, gcs_document_id, dify_document_id]):
@@ -154,7 +160,7 @@ async def lookup_single_document(
 
         return document
 
-    except DatabaseService as e:
+    except DatabaseError as e:
         logger.error(f"DatabaseService error during document lookup: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
