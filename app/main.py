@@ -14,7 +14,7 @@ db_service = DatabaseService(settings)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://silver-rag-fe.vercel.app", "https://silver-rag-fe-keithhchens-projects.vercel.app", "https://silver-rag-fe-git-main-keithhchens-projects.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
