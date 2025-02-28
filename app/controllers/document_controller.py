@@ -1,33 +1,58 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Response, Request
 from loguru import logger
 import traceback
+from typing import Union
 from app.models.document import Document
-from app.exceptions import ServiceError, DatabaseError, DifyAPIError
+from app.exceptions import ServiceError, DatabaseError, DifyAPIError, UpstageAPIError
 from app.services.database import DatabaseService
 from app.config import Settings
+from app.utils.pdf_splitter import PDFSplitter
 
 router = APIRouter()
 settings = Settings()
 db_service = DatabaseService(settings)
 document_service = db_service.document_service
 
-@router.post("/upload", response_model=Document)
+@router.post("/upload", response_model=[])
 async def upload_document(file: UploadFile = File(...)):
     try:
-        result = await document_service.process_and_store_document(file)
-        return result
-    except DifyAPIError as e:
-        logger.error(f"Embedding service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=500, detail=str(e))
-    except DatabaseError as e:
-        logger.error(f"Database service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=400, detail=str(e))
+        # Split PDF if needed
+        temp_files = await PDFSplitter.split_if_needed(file)
+
+        logger.info(f"PDF split into {len(temp_files)} parts")
+        results = []
+        try:
+            # Process each part
+            for temp_file in temp_files:
+                # Create a new UploadFile instance for each part
+                with open(temp_file, 'rb') as f:
+                    upload_file = UploadFile(filename=temp_file.name, file=f)
+                    result = await document_service.process_and_store_document(upload_file)
+                    results.append(result)
+        except DifyAPIError as e:
+            logger.error(f"Embedding service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+            raise HTTPException(status_code=500, detail=str(e))
+        except DatabaseError as e:
+            logger.error(f"Database service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except UpstageAPIError as e:
+            logger.error(f"OCR service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+            raise HTTPException(status_code=400, detail=str(e))
+        except ServiceError as e:
+            raise
+        finally:
+            # Clean up temporary files
+            PDFSplitter.cleanup_temp_files(temp_files)
+        
+        return results
     except ServiceError as e:
-        logger.error(f"Service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=400, detail=str(e))
+            logger.error(f"Service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+            raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException as e:
+        raise
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        return HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/{document_id}", response_model=bool)
 async def delete_document(document_id: int):
@@ -49,11 +74,11 @@ async def delete_document(document_id: int):
     except HTTPException:
         raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        logger.error(f"DatabaseService error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
         logger.error(f"Service error during document deletion: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         logger.error(f"Unexpected error during document deletion: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -62,6 +87,8 @@ async def delete_document(document_id: int):
 async def list_documents(page: int = 1, page_size: int = 10):
     try:
         return await document_service.list_documents(page=page, page_size=page_size)
+    except HTTPException:
+        raise
     except ServiceError as e:
         logger.error(f"Service error during document listing: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
@@ -87,7 +114,7 @@ async def get_document(document_id: int):
     except HTTPException:
         raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        logger.error(f"DatabaseService error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
         logger.error(f"Service error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
@@ -138,13 +165,13 @@ async def lookup_single_document(
     except HTTPException:
         raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        logger.error(f"DatabaseService error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
-        logger.error(f"Service error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        logger.error(f"Service error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Unexpected error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        logger.error(f"Unexpected error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{document_id}/file")
@@ -171,7 +198,7 @@ async def get_document_file(document_id: int):
     except HTTPException:
         raise
     except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
+        logger.error(f"DatabaseService error: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=400, detail=str(e))
     except ServiceError as e:
         logger.error(f"Service error during file retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")

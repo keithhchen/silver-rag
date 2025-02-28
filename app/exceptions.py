@@ -14,3 +14,6 @@ class DifyAPIError(ServiceError):
 
 class DatabaseError(ServiceError):
     pass
+
+class PDFError(ServiceError):
+    pass
