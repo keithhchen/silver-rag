@@ -21,7 +21,7 @@ class UserService:
         return bcrypt.verify(plain_password, hashed_password)
 
     def _create_token(self, user_uuid: str, role: str) -> str:
-        expire = datetime.utcnow() + timedelta(days=1)
+        expire = datetime.utcnow() + timedelta(days=7)
         to_encode = {
             "sub": str(user_uuid),
             "role": role,
