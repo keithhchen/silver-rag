@@ -7,7 +7,7 @@ from pathlib import Path
 from app.exceptions import PDFError
 
 class PDFSplitter:
-    MAX_PAGES = 3
+    MAX_PAGES = 100
     MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB in bytes
 
     @staticmethod
