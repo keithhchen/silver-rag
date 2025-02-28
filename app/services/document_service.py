@@ -28,7 +28,7 @@ class DocumentService:
             gcs_document_id = await self.storage_service.upload_file(file)
 
             # Process with Upstage API
-            logger.info("Processing document with Upstage API")
+            logger.info("Processing document with OCR API")
             upstage_response = await self.upstage_service.parse_document(file)
 
             # Process with Dify API
@@ -114,13 +114,62 @@ class DocumentService:
 
     async def soft_delete_document(self, document_id: int) -> bool:
         try:
+            # Blocking database lookup
             async with self.async_session() as session:
+                logger.info("starting db lookup")
                 document = await session.get(DocumentDB, document_id)
+                logger.info("ending db lookup")
                 if not document or document.deleted_at:
                     return False
-                document.deleted_at = datetime.utcnow()
-                await session.commit()
+
+                # Prepare document data for concurrent operations
+                gcs_id = document.gcs_document_id
+                dify_id = document.dify_document_id
+
+                # Define concurrent tasks
+                async def commit_to_db():
+                    try:
+                        logger.info("starting db commit")
+                        document.deleted_at = datetime.utcnow()
+                        await session.commit()
+                        logger.info("ending db commit")
+                    except Exception as e:
+                        logger.error(f"Error in database commit: {str(e)}")
+                        raise
+
+                async def delete_from_storage():
+                    try:
+                        logger.info("starting storage delete")
+                        await self.storage_service.delete_file(gcs_id)
+                        logger.info("ending storage delete")
+                    except Exception as e:
+                        logger.error(f"Error in storage delete: {str(e)}")
+                        raise
+
+                async def delete_from_dify():
+                    try:
+                        logger.info("starting dify delete")
+                        await self.dify_service.delete_document(dify_id)
+                        logger.info("ending dify delete")
+                    except Exception as e:
+                        logger.error(f"Error in dify delete: {str(e)}")
+                        raise
+
+                # Execute all tasks concurrently
+                try:
+                    import asyncio
+                    await asyncio.gather(
+                        commit_to_db(),
+                        delete_from_storage(),
+                        delete_from_dify()
+                    )
+                    logger.info(f"Successfully deleted document {document_id} from all services")
+                except Exception as e:
+                    logger.error(f"Error during concurrent operations: {str(e)}")
+                    raise DatabaseError(f"Failed to complete delete operations: {str(e)}")
+
                 return True
+
         except Exception as e:
             raise DatabaseError(f"Failed to delete document: {str(e)}")
 

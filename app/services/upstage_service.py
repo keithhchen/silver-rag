@@ -34,7 +34,7 @@ class UpstageService:
                     if response.status != 200:
                         error_text = await response.text()
                         raise UpstageAPIError(
-                            f"Upstage API request failed with status {response.status}: {error_text}",
+                            f"OCR API request failed with status {response.status}: {error_text}",
                             status_code=response.status
                         )
 
@@ -49,7 +49,7 @@ class UpstageService:
         except UpstageAPIError:
             raise
         except Exception as e:
-            raise UpstageAPIError(f"Failed to parse document with Upstage API: {str(e)}")
+            raise UpstageAPIError(f"Failed to parse document with OCR API: {str(e)}")
 
         finally:
             # Reset file pointer for other services to use

@@ -7,7 +7,6 @@ from loguru import logger
 from app.models.user import UserLog
 from app.services.database import Session
 from app.services.user_service import UserService
-
 class ChatService:
     def __init__(self, settings: Settings):
         self.chat_api_key = settings.dify_api_key

@@ -96,33 +96,6 @@ async def get_document(document_id: int):
         logger.error(f"Unexpected error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/embedding/{dify_document_id}", response_model=Document)
-async def get_document_by_dify_id(dify_document_id: str):
-    try:
-        document = await document_service.get_document_by_dify_id(dify_document_id)
-        if not document:
-            raise HTTPException(
-                status_code=404,
-                detail={
-                    "error": "Document not found",
-                    "message": "The requested document does not exist or has been deleted",
-                    "dify_document_id": dify_document_id
-                }
-            )
-        return document
-
-    except HTTPException:
-        raise
-    except DatabaseError as e:
-        logger.error(f"DatabaseService error during document lookup: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except ServiceError as e:
-        logger.error(f"Service error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        logger.error(f"Unexpected error during document retrieval: {str(e)}\nTraceback: {''.join(traceback.format_tb(e.__traceback__))}")
-        raise HTTPException(status_code=500, detail=str(e))
-
 @router.get("/single", response_model=Document)
 async def lookup_single_document(
     request: Request,

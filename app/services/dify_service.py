@@ -17,21 +17,22 @@ class DifyService:
     async def create_document(self, markdown_content: str, filename: str = 'document.md') -> DifyResponse:
         try:
             headers = {
-                'Authorization': f"Bearer {self.dataset_api_key}"
+                'Authorization': f"Bearer {self.dataset_api_key}",
+                'Content-Type': 'application/json'
             }
 
-            # Create form data with the markdown content and processing rules
-            form_data = aiohttp.FormData()
-            form_data.add_field('file', markdown_content, filename=filename)
-            form_data.add_field(
-                'data',
-                '{"indexing_technique": "high_quality", "doc_form": "text_model", "process_rule": {"mode": "automatic"}}'
-            )
-            
-            api_url = f"{self.dataset_api_url}/document/create-by-file"
+            # Create JSON payload for the text-based document creation
+            payload = {
+                'name': filename,
+                'text': markdown_content,
+                'indexing_technique': 'high_quality',
+                'process_rule': {'mode': 'automatic'}
+            }
+
+            api_url = f"{self.dataset_api_url}/document/create-by-text"
             
             async with aiohttp.ClientSession() as session:
-                async with session.post(api_url, headers=headers, data=form_data) as response:
+                async with session.post(api_url, headers=headers, json=payload) as response:
                     if response.status != 200:
                         error_text = await response.text()
                         raise DifyAPIError(
