@@ -224,7 +224,7 @@ class DocumentService:
                 return None
     
             # Get file from Google Cloud Storage
-            content = await self.storage_service.get_file(document.gcs_document_id)
+            content = await self.storage_service.get_file_url(document.gcs_document_id)
             if not content:
                 return None
     

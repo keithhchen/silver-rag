@@ -4,6 +4,7 @@ from app.config import Settings
 from app.exceptions import StorageError
 from loguru import logger
 import uuid
+import datetime
 
 class StorageService:
     def __init__(self, settings: Settings):
@@ -66,6 +67,32 @@ class StorageService:
             
         except Exception as e:
             raise StorageError(f"Failed to retrieve file from Google Cloud Storage: {str(e)}")
+
+    async def get_file_url(self, document_id: str, expiration_minutes: int = 60) -> str:
+        try:
+            bucket = self.client.bucket(self.bucket_name)
+            blobs = list(bucket.list_blobs(prefix=f"{document_id}/"))
+            
+            if not blobs:
+                return None
+                
+            # Get the first file in the document folder
+            blob = blobs[0]
+            
+            # Generate a signed URL that expires after the specified time
+            url = blob.generate_signed_url(
+                version="v4",
+                expiration=datetime.timedelta(minutes=expiration_minutes),
+                method="GET",
+                response_disposition="inline",
+                response_type=blob.content_type
+            )
+            
+            logger.info(f"Generated signed URL for file with ID: {document_id}")
+            return url
+            
+        except Exception as e:
+            raise StorageError(f"Failed to generate signed URL for file: {str(e)}")
 
     async def delete_file(self, document_id: str) -> bool:
         try:

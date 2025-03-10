@@ -187,12 +187,13 @@ async def get_document_file(document_id: int):
                     "document_id": document_id
                 }
             )
-
+            
+        return { "url": file_data }
         return Response(
             content=file_data['content'],
             media_type=file_data['content_type'],
             headers={
-                'Content-Disposition': f'inline; filename="{file_data["filename"]}"'
+                'Content-Disposition': f'inline; filename="{document_id}.pdf"; filename*=UTF-8''{document_id}.pdf'
             }
         )
     except HTTPException:
